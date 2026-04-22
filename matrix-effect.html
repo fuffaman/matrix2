@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Code Rain</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrixCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Imposta le dimensioni del canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Caratteri Matrix - Katakana + caratteri latini + numeri
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const nums = '0123456789';
+        
+        const matrixChars = katakana + latin + nums;
+        const charArray = matrixChars.split('');
+
+        // Configurazione avanzata per effetto più realistico
+        const fontSize = 14;
+        let columns = Math.floor(canvas.width / fontSize);
+        
+        // Classe per gestire ogni goccia di pioggia digitale
+        class Drop {
+            constructor(x) {
+                this.x = x;
+                this.y = Math.random() * -canvas.height; // Inizia sopra lo schermo
+                this.speed = Math.random() * 3 + 2; // Velocità variabile
+                this.length = Math.floor(Math.random() * 20) + 5; // Lunghezza scia variabile
+                this.chars = []; // Caratteri nella scia
+                this.reset();
+            }
+
+            reset() {
+                this.y = Math.random() * -100;
+                this.speed = Math.random() * 3 + 2;
+                this.length = Math.floor(Math.random() * 20) + 5;
+                this.chars = [];
+            }
+
+            update() {
+                this.y += this.speed;
+                
+                // Aggiungi nuovi caratteri in cima alla scia
+                this.chars.unshift({
+                    char: charArray[Math.floor(Math.random() * charArray.length)],
+                    brightness: 1.0
+                });
+
+                // Mantieni solo i caratteri necessari per la lunghezza della scia
+                if (this.chars.length > this.length) {
+                    this.chars.pop();
+                }
+
+                // Riduci la luminosità dei caratteri più vecchi
+                for (let i = 1; i < this.chars.length; i++) {
+                    this.chars[i].brightness = 1 - (i / this.length);
+                }
+
+                // Reset quando esce dallo schermo
+                if (this.y - (this.chars.length * fontSize) > canvas.height) {
+                    if (Math.random() > 0.95) {
+                        this.reset();
+                    }
+                }
+            }
+
+            draw() {
+                for (let i = 0; i < this.chars.length; i++) {
+                    const charData = this.chars[i];
+                    const y = this.y - (i * fontSize);
+                    
+                    if (i === 0) {
+                        // Il primo carattere è bianco brillante (capo della scia)
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.shadowColor = '#FFFFFF';
+                        ctx.shadowBlur = 15;
+                        ctx.globalAlpha = 1;
+                    } else {
+                        // Gli altri caratteri sono verdi con luminosità decrescente
+                        const greenValue = Math.floor(200 + (55 * charData.brightness));
+                        ctx.fillStyle = `rgb(0, ${greenValue}, 0)`;
+                        ctx.shadowColor = '#0F0';
+                        ctx.shadowBlur = 5 * charData.brightness;
+                        ctx.globalAlpha = charData.brightness;
+                    }
+                    
+                    ctx.font = `bold ${fontSize}px monospace`;
+                    ctx.fillText(charData.char, this.x, y);
+                }
+                
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Crea array di gocce
+        let drops = [];
+        function initDrops() {
+            columns = Math.floor(canvas.width / fontSize);
+            drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops.push(new Drop(i * fontSize));
+            }
+        }
+        initDrops();
+
+        window.addEventListener('resize', initDrops);
+
+        // Funzione principale di animazione
+        function animate() {
+            // Effetto scia - colore nero semi-trasparente per fade graduale
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Aggiorna e disegna tutte le gocce
+            for (const drop of drops) {
+                drop.update();
+                drop.draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Avvia l'animazione
+        animate();
+    </script>
+</body>
+</html>
